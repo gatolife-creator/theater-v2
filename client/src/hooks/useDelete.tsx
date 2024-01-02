@@ -1,11 +1,12 @@
+import { FolderName, VideoId } from "../../../server/utils/database";
 export const useDelete = () => {
-  const deleteVideo = async (id: string) => {
+  const deleteVideo = async (folder: FolderName, id: VideoId) => {
     await fetch("/api/delete", {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ folder, id }),
     })
       .then(() => {})
       .catch((error) => {

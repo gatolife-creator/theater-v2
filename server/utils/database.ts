@@ -52,6 +52,10 @@ export class Database {
     videoTable.set(id, title);
   }
 
+  addFolder(folder: FolderName) {
+    this.table?.set(folder, new Map<VideoId, VideoData>());
+  }
+
   // Deletes a video from a specific folder
   deleteVideo(folder: FolderName, id: string): void {
     this.table?.get(folder)?.delete(id);

@@ -61,6 +61,12 @@ router.get(
     await getThumbnail(req, res);
   }
 );
+router.post(
+  "/addFolder",
+  async (req: express.Request, res: express.Response) => {
+    await addFolder(req, res);
+  }
+);
 
 async function getFolder(req: express.Request, res: express.Response) {
   try {
@@ -213,6 +219,18 @@ async function getThumbnail(req: express.Request, res: express.Response) {
     const id = req.query.id;
     const folder = req.query.folder as string;
     res.sendFile(path.join(imagesDirectory, folder, `${id}.webp`));
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+}
+
+async function addFolder(req: express.Request, res: express.Response) {
+  try {
+    const folder = req.body.folder as string;
+    fs.mkdirSync(path.join(videosDirectory, folder));
+    saveDatabase();
+    res.status(200).end();
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
