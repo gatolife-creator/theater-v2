@@ -3,6 +3,7 @@ import path from "path";
 import { execSync, spawn } from "child_process";
 import fs from "fs";
 import { Server as IOServer } from "socket.io";
+import { mapToObjectRecursive } from "../utils/converter";
 
 import {
   Database,
@@ -29,10 +30,16 @@ const database = new Database(
 );
 
 // const database = new Database(new Map(Object.entries(JSON.parse(json)).map(([folder, videos]) => [folder, new Map(Object.entries(videos))])));
-
-router.get("/table", async (req: express.Request, res: express.Response) => {
-  await getTable(req, res);
+router.get("/folders", async (req: express.Request, res: express.Response) => {
+  console.log("Sending folders");
+  await getFolders(req, res);
 });
+router.get(
+  "/folder/:foldername",
+  async (req: express.Request, res: express.Response) => {
+    await getFolder(req, res);
+  }
+);
 router.get("/video", async (req: express.Request, res: express.Response) => {
   await getVideo(req, res);
 });
@@ -55,9 +62,24 @@ router.get(
   }
 );
 
-async function getTable(_: express.Request, res: express.Response) {
+async function getFolder(req: express.Request, res: express.Response) {
   try {
-    res.json(Database.serialize(database));
+    const foldername = req.params.foldername;
+    console.log(`Sending folder ${foldername}`);
+    const videos = database.getFolderTable(foldername);
+    // const folderPath = path.join(videosDirectory, foldername);
+    // const files = fs.readdirSync(folderPath);
+    res.json(mapToObjectRecursive(videos!));
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+}
+
+async function getFolders(req: express.Request, res: express.Response) {
+  try {
+    const folders = fs.readdirSync(videosDirectory);
+    res.json(folders);
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
@@ -105,12 +127,12 @@ async function getVideo(req: express.Request, res: express.Response) {
 async function downloadVideo(req: express.Request, res: express.Response) {
   try {
     const url = req.body.url;
-    const folder = req.body.folder as string;
+    const folder = (req.body.folder as string) || "default";
     const id = getVideoId(url);
     const title = getVideoTitle(id);
 
-    await downloadVideos(id);
-    await downloadThumbnail(id);
+    await downloadVideos(folder, id);
+    await downloadThumbnail(folder, id);
 
     database.addVideo(folder, id, title);
     saveDatabase();
@@ -132,12 +154,12 @@ function getVideoTitle(id: string) {
   return execSync(`yt-dlp ${id} --get-title`).toString();
 }
 
-async function downloadVideos(id: string): Promise<void> {
+async function downloadVideos(folder: string, id: string): Promise<void> {
   return new Promise((resolve, reject) => {
     console.log("Downloading video");
     const download = spawn(
       "yt-dlp",
-      [`${id}`, "-o", `${id}.mp4`, "-f", "mp4"],
+      [`${id}`, "-o", `${folder}/${id}.mp4`, "-f", "mp4"],
       {
         cwd: videosDirectory,
       }
@@ -159,9 +181,9 @@ async function downloadVideos(id: string): Promise<void> {
   });
 }
 
-async function downloadThumbnail(id: string) {
+async function downloadThumbnail(folder: string, id: string) {
   execSync(
-    `cd ${imagesDirectory} && yt-dlp ${id} -o ${id} --write-thumbnail --no-download`
+    `cd ${imagesDirectory} && yt-dlp ${id} -o ${folder}/${id} --write-thumbnail --no-download`
   );
 }
 
