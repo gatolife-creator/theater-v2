@@ -5,7 +5,7 @@ import { createServer } from "http";
 import { router as videoRouter, setIO } from "./api/videos";
 
 const app = express();
-const port = 3333;
+const port = 80;
 
 const httpServer = createServer(app);
 const io = new Server(httpServer);

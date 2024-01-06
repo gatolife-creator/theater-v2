@@ -84,7 +84,9 @@ async function getFolder(req: express.Request, res: express.Response) {
 
 async function getFolders(req: express.Request, res: express.Response) {
   try {
-    const folders = fs.readdirSync(videosDirectory);
+    const folders = fs
+      .readdirSync(videosDirectory)
+      .filter((file) => file !== ".DS_Store");
     res.json(folders);
   } catch (error) {
     console.error(error);
